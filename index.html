@@ -60,7 +60,7 @@
             transition: color 0.3s ease;
         }
 
-        /* تغيير لون الأرقام عند العمل */
+        /* إضافة كلاس عند التشغيل لتغيير اللون */
         .running .number {
             color: var(--running-color);
         }
@@ -167,21 +167,24 @@
     <script>
         let totalSeconds = 0;
         let timerId = null;
-        let isCountDown = false;
-        let currentMode = null; // 'fixed' أو 'open'
+        let currentMode = null; // 'fixed' or 'open'
 
-        // استعادة البيانات عند فتح الصفحة
         window.onload = () => {
             const savedSeconds = localStorage.getItem('savedSeconds');
             const savedTheme = localStorage.getItem('theme');
-            const savedStatus = localStorage.getItem('status');
-            
             if (savedSeconds) totalSeconds = parseInt(savedSeconds);
             if (savedTheme) setTheme(savedTheme);
-            if (savedStatus) document.getElementById('status').textContent = savedStatus;
-            
             updateDisplay();
         };
+
+        function setTheme(theme) {
+            if (theme === 'girls') {
+                document.getElementById('mainBody').classList.add('theme-girls');
+            } else {
+                document.getElementById('mainBody').classList.remove('theme-girls');
+            }
+            localStorage.setItem('theme', theme);
+        }
 
         function updateDisplay() {
             const h = Math.floor(totalSeconds / 3600);
@@ -192,52 +195,48 @@
             document.getElementById('min').textContent = m.toString().padStart(2, '0');
             document.getElementById('sec').textContent = s.toString().padStart(2, '0');
             
-            // حفظ الوقت الحالي في المتصفح
             localStorage.setItem('savedSeconds', totalSeconds);
         }
 
         function startTimer(isFixed) {
-            // ميزة الـ Toggle: لو نفس النوع شغال نوقفه
+            // منع تكرار التشغيل إذا كان يعمل بالفعل بنفس الوضع
             if (timerId && ((isFixed && currentMode === 'fixed') || (!isFixed && currentMode === 'open'))) {
-                stopTimer();
-                return;
+                return; 
             }
 
-            // لو في أي نوع تاني شغال نوقفه عشان نبدأ الجديد
             if (timerId) clearInterval(timerId);
 
             if (isFixed) {
-                const h = parseInt(document.getElementById('hInput').value) || 0;
-                const m = parseInt(document.getElementById('mInput').value) || 0;
+                const hVal = document.getElementById('hInput').value;
+                const mVal = document.getElementById('mInput').value;
                 
-                // تحديث الوقت لو المستخدم دخل بيانات جديدة
-                if (h > 0 || m > 0) totalSeconds = (h * 3600) + (m * 60);
+                if (hVal !== "" || mVal !== "") {
+                    totalSeconds = (parseInt(hVal || 0) * 3600) + (parseInt(mVal || 0) * 60);
+                    document.getElementById('hInput').value = "";
+                    document.getElementById('mInput').value = "";
+                }
                 
                 if (totalSeconds <= 0) {
                     alert("برجاء تحديد الوقت أولاً");
                     return;
                 }
                 
-                isCountDown = true;
                 currentMode = 'fixed';
                 document.getElementById('status').textContent = "مؤقت تنازلي يعمل...";
             } else {
-                isCountDown = false;
                 currentMode = 'open';
                 document.getElementById('status').textContent = "وقت مفتوح يعمل...";
             }
 
-            // إضافة كلاس اللون للأرقام وحفظ الحالة
             document.getElementById('clockUI').classList.add('running');
-            localStorage.setItem('status', document.getElementById('status').textContent);
-
+            
             timerId = setInterval(() => {
-                if (isCountDown) {
-                    if (totalSeconds > 0) {
-                        totalSeconds--;
-                    } else {
+                if (currentMode === 'fixed') {
+                    totalSeconds--;
+                    if (totalSeconds <= 0) {
+                        totalSeconds = 0;
                         stopTimer();
-                        alert("انتهى الوقت المحدد!");
+                        alert("انتهى الوقت!");
                     }
                 } else {
                     totalSeconds++;
@@ -249,10 +248,8 @@
         function stopTimer() {
             clearInterval(timerId);
             timerId = null;
-            currentMode = null;
-            document.getElementById('status').textContent = "متوقف مؤقتاً";
+            document.getElementById('status').textContent = "تم الإيقاف مؤقتاً";
             document.getElementById('clockUI').classList.remove('running');
-            localStorage.setItem('status', "متوقف مؤقتاً");
         }
 
         function resetAll() {
@@ -262,19 +259,6 @@
             document.getElementById('status').textContent = "جاهز للبدء";
             document.getElementById('hInput').value = "";
             document.getElementById('mInput').value = "";
-            localStorage.removeItem('savedSeconds');
-            localStorage.setItem('status', "جاهز للبدء");
-        }
-
-        function setTheme(theme) {
-            const body = document.getElementById('mainBody');
-            if (theme === 'girls') {
-                body.classList.add('theme-girls');
-                localStorage.setItem('theme', 'girls');
-            } else {
-                body.classList.remove('theme-girls');
-                localStorage.setItem('theme', 'dark');
-            }
         }
     </script>
 </body>
