@@ -33,9 +33,8 @@
         }
 
         h1 { font-size: 3.5rem; margin: 0; letter-spacing: -1px; }
-        .mode-text { margin-bottom: 30px; font-size: 1.2rem; opacity: 0.8; }
+        .mode-text { margin-bottom: 30px; font-size: 1.2rem; opacity: 0.8; height: 1.5rem; }
 
-        /* Flip Clock Design */
         .clock-container {
             display: flex;
             gap: 15px;
@@ -44,28 +43,28 @@
 
         .flip-card {
             background: var(--card-bg);
-            padding: 30px 20px;
+            padding: 25px 15px;
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            min-width: 120px;
+            min-width: 100px;
             text-align: center;
         }
 
         .number {
-            font-size: 5.5rem;
+            font-size: 4.5rem;
             font-weight: 800;
             display: block;
             line-height: 1;
         }
 
         .label {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             margin-top: 10px;
             display: block;
             opacity: 0.6;
+            font-weight: bold;
         }
 
-        /* Controls */
         .controls {
             margin-top: 40px;
             display: flex;
@@ -74,7 +73,8 @@
             gap: 20px;
         }
 
-        .buttons-row { display: flex; gap: 10px; }
+        .inputs-row { display: flex; gap: 10px; }
+        .buttons-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
         input {
             padding: 12px;
@@ -83,12 +83,12 @@
             background: transparent;
             color: var(--text-color);
             text-align: center;
-            width: 150px;
+            width: 80px;
             font-size: 1rem;
         }
 
         button {
-            padding: 12px 30px;
+            padding: 12px 25px;
             border: none;
             border-radius: 50px;
             cursor: pointer;
@@ -124,9 +124,13 @@
     </div>
 
     <h1 id="title">فكر</h1>
-    <p class="mode-text" id="status">جاهز للبدء</p>
+    <p class="mode-text" id="status">جاري التحميل...</p>
 
     <div class="clock-container">
+        <div class="flip-card">
+            <span class="number" id="hour">00</span>
+            <span class="label">ساعة</span>
+        </div>
         <div class="flip-card">
             <span class="number" id="min">00</span>
             <span class="label">دقيقة</span>
@@ -138,56 +142,86 @@
     </div>
 
     <div class="controls">
-        <input type="number" id="timeInput" placeholder="حدد دقائق أو اتركه مفتوح">
+        <div class="inputs-row">
+            <input type="number" id="hInput" placeholder="ساعة" min="0">
+            <input type="number" id="mInput" placeholder="دقيقة" min="0">
+        </div>
         
         <div class="buttons-row">
             <button onclick="startTimer(true)">مؤقت محدد</button>
-            <button onclick="startTimer(false)" style="background: #7f8c8d;">وقت مفتوح</button>
+            <button onclick="startTimer(false)" style="background: #2ecc71;">وقت مفتوح</button>
             <button onclick="stopTimer()" style="background: #e74c3c;">إيقاف</button>
             <button onclick="resetAll()" style="background: #95a5a6;">إعادة</button>
         </div>
     </div>
 
     <script>
-        let seconds = 0;
+        let totalSeconds = 0;
         let timerId = null;
         let isCountDown = false;
 
+        // التحميل عند فتح الصفحة
+        window.onload = () => {
+            const savedSeconds = localStorage.getItem('savedSeconds');
+            const savedTheme = localStorage.getItem('theme');
+            const savedStatus = localStorage.getItem('status');
+            
+            if (savedSeconds) totalSeconds = parseInt(savedSeconds);
+            if (savedTheme) setTheme(savedTheme);
+            if (savedStatus) document.getElementById('status').textContent = savedStatus;
+            
+            updateDisplay();
+            if(!savedStatus) document.getElementById('status').textContent = "جاهز للبدء";
+        };
+
         function updateDisplay() {
-            const m = Math.floor(seconds / 60);
-            const s = seconds % 60;
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            
+            document.getElementById('hour').textContent = h.toString().padStart(2, '0');
             document.getElementById('min').textContent = m.toString().padStart(2, '0');
             document.getElementById('sec').textContent = s.toString().padStart(2, '0');
+            
+            // حفظ الوقت الحالي في المتصفح
+            localStorage.setItem('savedSeconds', totalSeconds);
         }
 
         function startTimer(isFixed) {
-            if (timerId) return;
+            if (timerId) clearInterval(timerId); // منع تداخل المؤقتات
 
-            const input = document.getElementById('timeInput').value;
-            
             if (isFixed) {
-                if (!input || input <= 0) {
-                    alert("برجاء تحديد عدد الدقائق أولاً");
+                const h = parseInt(document.getElementById('hInput').value) || 0;
+                const m = parseInt(document.getElementById('mInput').value) || 0;
+                
+                if (h === 0 && m === 0 && totalSeconds === 0) {
+                    alert("برجاء تحديد الوقت أولاً");
                     return;
                 }
-                seconds = input * 60;
+                
+                // لو الساعات والدقائق مكتوبة نحدث الوقت، لو لا نكمل على الوقت الحالي
+                if (h > 0 || m > 0) totalSeconds = (h * 3600) + (m * 60);
+                
                 isCountDown = true;
                 document.getElementById('status').textContent = "مؤقت تنازلي يعمل...";
             } else {
-                seconds = 0;
                 isCountDown = false;
-                document.getElementById('status').textContent = "وقت مفتوح (يعد الآن)...";
+                document.getElementById('status').textContent = "وقت مفتوح يعمل...";
             }
+
+            localStorage.setItem('status', document.getElementById('status').textContent);
 
             timerId = setInterval(() => {
                 if (isCountDown) {
-                    if (seconds > 0) seconds--;
-                    else {
-                        clearInterval(timerId);
+                    if (totalSeconds > 0) {
+                        totalSeconds--;
+                    } else {
+                        stopTimer();
+                        document.getElementById('status').textContent = "انتهى الوقت!";
                         alert("انتهى الوقت المحدد!");
                     }
                 } else {
-                    seconds++;
+                    totalSeconds++;
                 }
                 updateDisplay();
             }, 1000);
@@ -197,20 +231,29 @@
             clearInterval(timerId);
             timerId = null;
             document.getElementById('status').textContent = "متوقف مؤقتاً";
+            localStorage.setItem('status', "متوقف مؤقتاً");
         }
 
         function resetAll() {
             stopTimer();
-            seconds = 0;
+            totalSeconds = 0;
             updateDisplay();
             document.getElementById('status').textContent = "جاهز للبدء";
-            document.getElementById('timeInput').value = "";
+            document.getElementById('hInput').value = "";
+            document.getElementById('mInput').value = "";
+            localStorage.removeItem('savedSeconds');
+            localStorage.removeItem('status');
         }
 
         function setTheme(theme) {
             const body = document.getElementById('mainBody');
-            if (theme === 'girls') body.classList.add('theme-girls');
-            else body.classList.remove('theme-girls');
+            if (theme === 'girls') {
+                body.classList.add('theme-girls');
+                localStorage.setItem('theme', 'girls');
+            } else {
+                body.classList.remove('theme-girls');
+                localStorage.setItem('theme', 'dark');
+            }
         }
     </script>
 </body>
