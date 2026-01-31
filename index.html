@@ -10,6 +10,7 @@
             --card-bg: #1e1e1e;
             --text-color: #ffffff;
             --accent: #3498db;
+            --running-color: #2ecc71;
         }
 
         body.theme-girls {
@@ -17,6 +18,7 @@
             --card-bg: #ffffff;
             --text-color: #d63384;
             --accent: #ff85a2;
+            --running-color: #f06292;
         }
 
         body {
@@ -45,7 +47,7 @@
             background: var(--card-bg);
             padding: 25px 15px;
             border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             min-width: 100px;
             text-align: center;
         }
@@ -55,6 +57,12 @@
             font-weight: 800;
             display: block;
             line-height: 1;
+            transition: color 0.3s ease;
+        }
+
+        /* تغيير لون الأرقام عند العمل */
+        .running .number {
+            color: var(--running-color);
         }
 
         .label {
@@ -85,6 +93,7 @@
             text-align: center;
             width: 80px;
             font-size: 1rem;
+            outline: none;
         }
 
         button {
@@ -124,9 +133,9 @@
     </div>
 
     <h1 id="title">فكر</h1>
-    <p class="mode-text" id="status">جاري التحميل...</p>
+    <p class="mode-text" id="status">جاهز للبدء</p>
 
-    <div class="clock-container">
+    <div class="clock-container" id="clockUI">
         <div class="flip-card">
             <span class="number" id="hour">00</span>
             <span class="label">ساعة</span>
@@ -159,8 +168,9 @@
         let totalSeconds = 0;
         let timerId = null;
         let isCountDown = false;
+        let currentMode = null; // 'fixed' أو 'open'
 
-        // التحميل عند فتح الصفحة
+        // استعادة البيانات عند فتح الصفحة
         window.onload = () => {
             const savedSeconds = localStorage.getItem('savedSeconds');
             const savedTheme = localStorage.getItem('theme');
@@ -171,7 +181,6 @@
             if (savedStatus) document.getElementById('status').textContent = savedStatus;
             
             updateDisplay();
-            if(!savedStatus) document.getElementById('status').textContent = "جاهز للبدء";
         };
 
         function updateDisplay() {
@@ -188,27 +197,38 @@
         }
 
         function startTimer(isFixed) {
-            if (timerId) clearInterval(timerId); // منع تداخل المؤقتات
+            // ميزة الـ Toggle: لو نفس النوع شغال نوقفه
+            if (timerId && ((isFixed && currentMode === 'fixed') || (!isFixed && currentMode === 'open'))) {
+                stopTimer();
+                return;
+            }
+
+            // لو في أي نوع تاني شغال نوقفه عشان نبدأ الجديد
+            if (timerId) clearInterval(timerId);
 
             if (isFixed) {
                 const h = parseInt(document.getElementById('hInput').value) || 0;
                 const m = parseInt(document.getElementById('mInput').value) || 0;
                 
-                if (h === 0 && m === 0 && totalSeconds === 0) {
+                // تحديث الوقت لو المستخدم دخل بيانات جديدة
+                if (h > 0 || m > 0) totalSeconds = (h * 3600) + (m * 60);
+                
+                if (totalSeconds <= 0) {
                     alert("برجاء تحديد الوقت أولاً");
                     return;
                 }
                 
-                // لو الساعات والدقائق مكتوبة نحدث الوقت، لو لا نكمل على الوقت الحالي
-                if (h > 0 || m > 0) totalSeconds = (h * 3600) + (m * 60);
-                
                 isCountDown = true;
+                currentMode = 'fixed';
                 document.getElementById('status').textContent = "مؤقت تنازلي يعمل...";
             } else {
                 isCountDown = false;
+                currentMode = 'open';
                 document.getElementById('status').textContent = "وقت مفتوح يعمل...";
             }
 
+            // إضافة كلاس اللون للأرقام وحفظ الحالة
+            document.getElementById('clockUI').classList.add('running');
             localStorage.setItem('status', document.getElementById('status').textContent);
 
             timerId = setInterval(() => {
@@ -217,7 +237,6 @@
                         totalSeconds--;
                     } else {
                         stopTimer();
-                        document.getElementById('status').textContent = "انتهى الوقت!";
                         alert("انتهى الوقت المحدد!");
                     }
                 } else {
@@ -230,7 +249,9 @@
         function stopTimer() {
             clearInterval(timerId);
             timerId = null;
+            currentMode = null;
             document.getElementById('status').textContent = "متوقف مؤقتاً";
+            document.getElementById('clockUI').classList.remove('running');
             localStorage.setItem('status', "متوقف مؤقتاً");
         }
 
@@ -242,7 +263,7 @@
             document.getElementById('hInput').value = "";
             document.getElementById('mInput').value = "";
             localStorage.removeItem('savedSeconds');
-            localStorage.removeItem('status');
+            localStorage.setItem('status', "جاهز للبدء");
         }
 
         function setTheme(theme) {
