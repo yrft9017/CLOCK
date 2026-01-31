@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فكر - المؤقت الذكي</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --accent: #3498db;
+        }
+
+        body.theme-girls {
+            --bg-color: #fff0f6;
+            --card-bg: #ffffff;
+            --text-color: #d63384;
+            --accent: #ff85a2;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: all 0.4s ease;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        h1 { font-size: 3.5rem; margin: 0; letter-spacing: -1px; }
+        .mode-text { margin-bottom: 30px; font-size: 1.2rem; opacity: 0.8; }
+
+        /* Flip Clock Design */
+        .clock-container {
+            display: flex;
+            gap: 15px;
+            direction: ltr;
+        }
+
+        .flip-card {
+            background: var(--card-bg);
+            padding: 30px 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .number {
+            font-size: 5.5rem;
+            font-weight: 800;
+            display: block;
+            line-height: 1;
+        }
+
+        .label {
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: block;
+            opacity: 0.6;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .buttons-row { display: flex; gap: 10px; }
+
+        input {
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid var(--accent);
+            background: transparent;
+            color: var(--text-color);
+            text-align: center;
+            width: 150px;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            background: var(--accent);
+            color: white;
+            transition: 0.2s;
+        }
+
+        button:hover { transform: translateY(-3px); filter: brightness(1.1); }
+
+        .theme-switcher {
+            position: absolute;
+            top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body id="mainBody">
+
+    <div class="theme-switcher">
+        <div class="theme-btn" style="background: #121212;" onclick="setTheme('dark')"></div>
+        <div class="theme-btn" style="background: #ff85a2;" onclick="setTheme('girls')"></div>
+    </div>
+
+    <h1 id="title">فكر</h1>
+    <p class="mode-text" id="status">جاهز للبدء</p>
+
+    <div class="clock-container">
+        <div class="flip-card">
+            <span class="number" id="min">00</span>
+            <span class="label">دقيقة</span>
+        </div>
+        <div class="flip-card">
+            <span class="number" id="sec">00</span>
+            <span class="label">ثانية</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <input type="number" id="timeInput" placeholder="حدد دقائق أو اتركه مفتوح">
+        
+        <div class="buttons-row">
+            <button onclick="startTimer(true)">مؤقت محدد</button>
+            <button onclick="startTimer(false)" style="background: #7f8c8d;">وقت مفتوح</button>
+            <button onclick="stopTimer()" style="background: #e74c3c;">إيقاف</button>
+            <button onclick="resetAll()" style="background: #95a5a6;">إعادة</button>
+        </div>
+    </div>
+
+    <script>
+        let seconds = 0;
+        let timerId = null;
+        let isCountDown = false;
+
+        function updateDisplay() {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            document.getElementById('min').textContent = m.toString().padStart(2, '0');
+            document.getElementById('sec').textContent = s.toString().padStart(2, '0');
+        }
+
+        function startTimer(isFixed) {
+            if (timerId) return;
+
+            const input = document.getElementById('timeInput').value;
+            
+            if (isFixed) {
+                if (!input || input <= 0) {
+                    alert("برجاء تحديد عدد الدقائق أولاً");
+                    return;
+                }
+                seconds = input * 60;
+                isCountDown = true;
+                document.getElementById('status').textContent = "مؤقت تنازلي يعمل...";
+            } else {
+                seconds = 0;
+                isCountDown = false;
+                document.getElementById('status').textContent = "وقت مفتوح (يعد الآن)...";
+            }
+
+            timerId = setInterval(() => {
+                if (isCountDown) {
+                    if (seconds > 0) seconds--;
+                    else {
+                        clearInterval(timerId);
+                        alert("انتهى الوقت المحدد!");
+                    }
+                } else {
+                    seconds++;
+                }
+                updateDisplay();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerId);
+            timerId = null;
+            document.getElementById('status').textContent = "متوقف مؤقتاً";
+        }
+
+        function resetAll() {
+            stopTimer();
+            seconds = 0;
+            updateDisplay();
+            document.getElementById('status').textContent = "جاهز للبدء";
+            document.getElementById('timeInput').value = "";
+        }
+
+        function setTheme(theme) {
+            const body = document.getElementById('mainBody');
+            if (theme === 'girls') body.classList.add('theme-girls');
+            else body.classList.remove('theme-girls');
+        }
+    </script>
+</body>
+</html>
